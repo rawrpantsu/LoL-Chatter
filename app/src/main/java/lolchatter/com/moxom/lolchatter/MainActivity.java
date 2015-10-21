@@ -1,14 +1,8 @@
 package lolchatter.com.moxom.lolchatter;
 
-        import com.github.theholywaffle.lolchatapi.ChatServer;
-        import com.github.theholywaffle.lolchatapi.FriendRequestPolicy;
-        import com.github.theholywaffle.lolchatapi.LolChat;
-        import com.github.theholywaffle.lolchatapi.listeners.ChatListener;
-        import com.github.theholywaffle.lolchatapi.riotapi.RateLimit;
-        import com.github.theholywaffle.lolchatapi.riotapi.RiotApiKey;
-        import com.github.theholywaffle.lolchatapi.wrapper.Friend;
-
-import android.os.Bundle;
+        import android.app.ProgressDialog;
+        import android.os.AsyncTask;
+        import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
@@ -16,7 +10,8 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
-import android.view.LayoutInflater;
+        import android.util.Log;
+        import android.view.LayoutInflater;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -49,6 +44,23 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import android.widget.TextView;
+
+
+        import org.jivesoftware.smack.AbstractXMPPConnection;
+        import org.jivesoftware.smack.ConnectionConfiguration;
+        import org.jivesoftware.smack.SmackException;
+        import org.jivesoftware.smack.XMPPException;
+        import org.jivesoftware.smack.tcp.XMPPTCPConnection;
+        import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration;
+
+        import java.io.IOException;
+        import java.security.KeyManagementException;
+        import java.security.NoSuchAlgorithmException;
+        import java.security.SecureRandom;
+
+        import javax.net.ssl.SSLContext;
+        import javax.net.ssl.SSLSocketFactory;
+
 
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
@@ -95,12 +107,19 @@ public class MainActivity extends AppCompatActivity
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(mViewPager);
 
-        final LolChat api = new LolChat(ChatServer.EUW, FriendRequestPolicy.ACCEPT_ALL, new RiotApiKey("RIOT-API-KEY", RateLimit.DEFAULT));
-        if (api.login("myusername", "mypassword")) {
+
+        new AsyncCaller().execute();
+
+
+
+        /*
+        final LolChat api = new LolChat(ChatServer.NA2, FriendRequestPolicy.ACCEPT_ALL, new RiotApiKey("RIOT-API-KEY", RateLimit.DEFAULT));
+        if (api.login("cousinfartbubbles", "cousinfartbubbles")) {
 
             // Example 1: Send Chat Message to all your friends
             for (Friend f : api.getFriends()) {
-                f.sendMessage("Hello " + f.getName());
+                Log.i("LOL", "FRIEND" + f.getName());
+              //  f.sendMessage("Hello " + f.getName());
             }
 
             // Example 2: Send Chat Message to all your friends and wait for an
@@ -110,8 +129,8 @@ public class MainActivity extends AppCompatActivity
 
                     @Override
                     public void onMessage(Friend friend, String message) {
-                        System.out.println("Friend " + friend.getName()
-                                + " responded to my Hello World!");
+                   //     System.out.println("Friend " + friend.getName()
+                 //               + " responded to my Hello World!");
                     }
                 });
             }
@@ -122,7 +141,7 @@ public class MainActivity extends AppCompatActivity
                 f.sendMessage("Hi, I'm your biggest fan!");
             }
         }
-
+*/
 
     }
 
@@ -253,6 +272,108 @@ public class MainActivity extends AppCompatActivity
             TextView textView = (TextView) rootView.findViewById(R.id.section_label);
             textView.setText(getString(R.string.section_format, getArguments().getInt(ARG_SECTION_NUMBER)));
             return rootView;
+        }
+    }
+
+
+    private class AsyncCaller extends AsyncTask<Void, Void, Void> {
+        ProgressDialog pdLoading = new ProgressDialog(MainActivity.this);
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            //this method will be running on UI thread
+            pdLoading.setMessage("\tLoading...");
+            pdLoading.show();
+        }
+
+        @Override
+        protected Void doInBackground(Void... params) {
+
+
+            try {
+
+
+             /*
+                 ConnectionConfiguration config = new ConnectionConfiguration("chat.na2.lol.riotgames.com", 5223,);
+                config.setSecurityMode(ConnectionConfiguration.SecurityMode.enabled);
+                config.setSocketFactory(SSLSocketFactory.getDefault());
+                config.setCompressionEnabled(true);
+                connection = new XMPPTCPConnection(config);
+*/
+/*
+
+
+                int abc = 5;
+                XMPPTCPConnectionConfiguration config2 = XMPPTCPConnectionConfiguration.builder()
+                        .setUsernameAndPassword("username", "AIR_password")
+                        .setResource("xiff")
+                        .setHost("chat.na2.lol.riotgames.com")
+                        .setPort(5223)
+                        .setServiceName("pvp.net")
+                                .setSecurityMode(ConnectionConfiguration.SecurityMode.required)
+                      //  .setSecurityMode(ConnectionConfiguration.SecurityMode.ifpossible)
+                       .setSocketFactory(SSLSocketFactory.getDefault())
+                        .setCompressionEnabled(true)
+                        .build();
+
+                AbstractXMPPConnection conn2 = new XMPPTCPConnection(config2);
+                conn2.connect();
+*/
+/*
+                XMPPTCPConnectionConfiguration.Builder config = XMPPTCPConnectionConfiguration.builder();
+                config.setSecurityMode(ConnectionConfiguration.SecurityMode.required);
+                //For OLD STYLE SSL
+                config.setSecurityMode(ConnectionConfiguration.SecurityMode.enabled);
+                config.setUsernameAndPassword("username" + "@" + "pvp.net", "AIR_"+password);
+                config.setServiceName("pvp.net");
+                config.setHost(chat.na2.lol.riotgames.com);
+                config.setPort(5223);
+                config.setDebuggerEnabled(true);
+                //OLD STYLE SSL
+               
+                config.setSocketFactory(SSLSocketFactory.getDefault());
+
+                /*
+                try {
+                    SSLContext sc = SSLContext.getInstance("TLS");
+                    MemorizingTrustManager mtm = new MemorizingTrustManager(getBaseContext());
+                    sc.init(null, MemorizingTrustManager.getInstanceList(ctx), new SecureRandom());
+                    config.setCustomSSLContext(sc);
+                    config.setHostnameVerifier(mtm.wrapHostnameVerifier(new org.apache.http.conn.ssl.StrictHostnameVerifier()));
+                } catch (NoSuchAlgorithmException | KeyManagementException e) {
+                    throw new IllegalStateException(e);
+                }
+*/
+                XMPPTCPConnection  mConnection = new XMPPTCPConnection(config.build());
+                mConnection.setPacketReplyTimeout(10000);
+
+                try {
+                    mConnection.connect();
+                    mConnection.login();
+                } catch (SmackException | IOException | XMPPException e) {
+                    e.printStackTrace();
+                }
+
+                int a = 5;
+            } catch (Exception e) {
+
+                int a = 5;
+                int b = 5;
+            }
+
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void result) {
+            super.onPostExecute(result);
+
+            //this method will be running on UI thread
+
+            pdLoading.dismiss();
         }
     }
 }

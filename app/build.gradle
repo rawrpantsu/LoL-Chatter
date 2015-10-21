@@ -25,5 +25,10 @@ dependencies {
     compile 'com.android.support:appcompat-v7:23.0.1'
     compile 'com.android.support:design:23.0.1'
 
-    compile 'com.github.theholywaffle:lolchatapi:1.2.9'
+
+
+
+    compile "org.igniterealtime.smack:smack-android-extensions:4.1.4"
+    compile "org.igniterealtime.smack:smack-tcp:4.1.4"
+
 }
