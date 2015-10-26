@@ -16,6 +16,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -24,14 +25,32 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import org.jivesoftware.smack.AbstractXMPPConnection;
+import org.jivesoftware.smack.ConnectionConfiguration;
 import org.jivesoftware.smack.SmackException;
 import org.jivesoftware.smack.XMPPException;
+import org.jivesoftware.smack.chat.Chat;
+import org.jivesoftware.smack.chat.ChatManager;
+import org.jivesoftware.smack.packet.Presence;
+import org.jivesoftware.smack.roster.Roster;
+import org.jivesoftware.smack.roster.RosterEntry;
 import org.jivesoftware.smack.tcp.XMPPTCPConnection;
 import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration;
+import org.jivesoftware.smack.util.TLSUtils;
 
 import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.Collection;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.X509TrustManager;
 
 //fragment imports
 
@@ -261,29 +280,55 @@ public class MainActivity extends AppCompatActivity
             pdLoading.show();
         }
 
+
         @Override
         protected Void doInBackground(Void... params) {
 
 
+            XMPPTCPConnectionConfiguration.Builder conf = XMPPTCPConnectionConfiguration.builder();
+
+
+            conf.setHost(getString(R.string.host));
+            conf.setPort(Integer.parseInt(getString(R.string.port)));
+            conf.setServiceName(getString(R.string.service));
+            conf.setDebuggerEnabled(true); // with true is crashing
+            conf.setUsernameAndPassword(getString(R.string.demo_username), "AIR_" + getString(R.string.demo_password));
+            conf.setResource(getString(R.string.resource));
+            conf.setSocketFactory(SSLSocketFactory.getDefault());
+            conf.setSendPresence(true);
+
+
+            conf.setSecurityMode(ConnectionConfiguration.SecurityMode.disabled);
+
+// accept all certificate - just for testing
             try {
+                TLSUtils.acceptAllCertificates(conf);
+            } catch (NoSuchAlgorithmException e) {
+            } catch (KeyManagementException e) {
+            }
 
-                XMPPTCPConnectionConfiguration config2 = XMPPTCPConnectionConfiguration.builder()
-                        .setUsernameAndPassword("username", "AIR_" + "password")
-                        .setResource("xiff")
-                        .setHost("chat.na2.lol.riotgames.com")
-                        .setPort(5223)
-                        .setServiceName("pvp.net")
-                                //  .setSecurityMode(ConnectionConfiguration.SecurityMode.required)
-                                //  .setSecurityMode(ConnectionConfiguration.SecurityMode.ifpossible)
-                        .setSocketFactory(SSLSocketFactory.getDefault())
-                        .setCompressionEnabled(true)
-                        .build();
+// verify all hostname - just for testing
+            conf.setHostnameVerifier(new HostnameVerifier() {
+                @Override
+                public boolean verify(String hostname, SSLSession session) {
+                    return true;
+                }
+            });
 
-                conn2 = new XMPPTCPConnection(config2);
-                conn2.connect();
+            XMPPTCPConnection connection = new XMPPTCPConnection(conf.build());
 
+            try {
+                connection.connect();
+            } catch (SmackException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (XMPPException e) {
+                e.printStackTrace();
+            }
 
-                return null;
+            try {
+                connection.login(); // throw exception SASLError using DIGEST-MD5: not-authorized
             } catch (XMPPException e) {
                 e.printStackTrace();
             } catch (SmackException e) {
@@ -291,7 +336,68 @@ public class MainActivity extends AppCompatActivity
             } catch (IOException e) {
                 e.printStackTrace();
             }
+
+            try {
+                Thread.sleep(15000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            final ChatManager cm = ChatManager.getInstanceFor(connection);
+
+            Chat mox = cm.createChat("sum19332813@pvp.net/xiff");
+            try {
+                mox.sendMessage("hey");
+                mox.sendMessage("yo");
+            } catch (SmackException.NotConnectedException e) {
+                e.printStackTrace();
+            }
+
+
+            Log.i("LOL", "GETTING ROSTER");
+
+
+            Roster roster = Roster.getInstanceFor(connection);
+            Collection<RosterEntry> entries = roster.getEntries();
+            Presence presence;
+
+            Log.i("LOL", "GET;" + roster.getGroupCount());
+            for (RosterEntry entry : entries) {
+                presence = roster.getPresence(entry.getUser());
+
+                Log.i("LOL", "USER: " + entry.getUser());
+                Log.i("LOL", "name: " + presence.getType().name());
+                Log.i("LOL", "status: " + presence.getStatus());
+            }
+
             return null;
+        }
+
+        private void trustEveryone() {
+            try {
+                HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
+                    public boolean verify(String hostname, SSLSession session) {
+                        return true;
+                    }
+                });
+                SSLContext context = SSLContext.getInstance("TLS");
+                context.init(null, new X509TrustManager[]{new X509TrustManager() {
+                    public void checkClientTrusted(X509Certificate[] chain,
+                                                   String authType) throws CertificateException {
+                    }
+
+                    public void checkServerTrusted(X509Certificate[] chain,
+                                                   String authType) throws CertificateException {
+                    }
+
+                    public X509Certificate[] getAcceptedIssuers() {
+                        return new X509Certificate[0];
+                    }
+                }}, new SecureRandom());
+                HttpsURLConnection.setDefaultSSLSocketFactory(
+                        context.getSocketFactory());
+            } catch (Exception e) { // should never happen
+                e.printStackTrace();
+            }
         }
 
         @Override
