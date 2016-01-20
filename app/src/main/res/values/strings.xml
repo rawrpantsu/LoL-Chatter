@@ -20,8 +20,8 @@
     <string name="service">pvp.net</string>
     <string name="resource">xiff</string>
 
-    <string name="demo_username">lolchatter</string>
-    <string name="demo_password">lolchatter11</string>
+    <string name="demo_username"></string>
+    <string name="demo_password"></string>
 
     <string name="demo_2username"></string>
     <string name="demo_2password"></string>
